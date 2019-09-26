@@ -12,22 +12,25 @@
 <script>
 	var gameConfig = {
 		type: Phaser.AUTO,
-		width: 800,
-		height: 600,
+		width: 1000,
+		height: 1000,
 		physics: {
 			default: 'arcade'
 		},
 		scene: {
 			preload: preload,
 			create: create
-		}
+		},
+        scale: {
+            mode: Phaser.FIT
+        }
 	};
 	var game = new Phaser.Game(gameConfig);
 	
 	function preload ()
     {
         //this.load.setBaseURL('http://labs.phaser.io');
-        this.load.image('sky', 'assets/skies/Main.png');
+        this.load.image('sky', 'assets/skies/NightSky.png');
         //this.load.image('logo', 'assets/sprites/GreenBall.png');
         this.load.spritesheet('block', 'assets/sprites/blocks.png', { frameWidth: 32, frameHeight: 32 });
         this.load.image('ball', 'assets/sprites/ball.png');
@@ -38,24 +41,50 @@
     function create ()
     {
         let { width, height } = this.canvas;
-        this.add.image(400, 300, 'sky');
+        console.log('width' + width + ', height: ' + height);
+        
+        /*
+        let borderConfig = {
+            x: 0,
+            y: 50,
+            width: width,
+            height: height - 100,
+            checkLeft: true,
+            checkright: true,
+            checktop: true,
+            checkbottom: true
+        };
+        */
+        //this.physics.world.setBounds(borderConfig);
+        //this.Phaser.Physics.Arcade.World.setBounds(borderConfig);
+        //this.Phaser.Physics.Matter.World.setBounds(borderConfig);
+        this.physics.world.bounds.y = 50;
+        this.physics.world.bounds.height = height - 100;
+        
+
+        this.add.image(width / 2, height / 2, 'sky');
         blocks = this.physics.add.group({
             key: 'block',
             repeat: 4,
             setXY: { x: width / 6, y: height / 5, stepX: width / 6 }
         });
         
+        /*
         var particles = this.add.particles('red');
         var emitter = particles.createEmitter({
             speed: 100,
             scale: { start: 1, end: 0 },
             blendMode: 'ADD'
         });
+        */
+
         var ball = this.physics.add.image(400, 100, 'ball');
         ball.setVelocity(100, 200);
-        ball.setBounce(1, 1);
+        ball.setBounce(1);
         ball.setCollideWorldBounds(true);
-        emitter.startFollow(ball);
+        ball.onWorldBounds = true;
+
+        //emitter.startFollow(ball);
     }
 </script>
 </body>
