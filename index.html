@@ -32,7 +32,7 @@
         //this.load.setBaseURL('http://labs.phaser.io');
         this.load.image('sky', 'assets/skies/NightSky.png');
         //this.load.image('logo', 'assets/sprites/GreenBall.png');
-        this.load.spritesheet('block', 'assets/sprites/blocks.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.spritesheet('blocks', 'assets/sprites/blocks.png', { frameWidth: 32, frameHeight: 32 });
         this.load.image('ball', 'assets/sprites/ball.png');
         this.load.image('red', 'assets/particles/redParticle.png');
 
@@ -41,7 +41,6 @@
     function create ()
     {
         let { width, height } = this.canvas;
-        console.log('width' + width + ', height: ' + height);
         
         /*
         let borderConfig = {
@@ -63,10 +62,26 @@
         
 
         this.add.image(width / 2, height / 2, 'sky');
+        /*
         blocks = this.physics.add.group({
             key: 'block',
             repeat: 4,
             setXY: { x: width / 6, y: height / 5, stepX: width / 6 }
+        });
+        */
+        this.blockGroup = this.add.group({
+            key: 'blocks',
+            frame: [0, 1, 2, 3, 4],
+            frameQuantity: 60
+        });
+
+        Phaser.Actions.GridAlign(this.blockGroup.getChildren(), {
+            width: 20,
+            height: 15,
+            cellWidth: 32,
+            cellHeight: 32,
+            x: 180,
+            y: 240
         });
         
         /*
@@ -78,14 +93,23 @@
         });
         */
 
-        var ball = this.physics.add.image(400, 100, 'ball');
-        ball.setVelocity(100, 200);
-        ball.setBounce(1);
-        ball.setCollideWorldBounds(true);
-        ball.onWorldBounds = true;
+        this.ball = this.physics.add.image(400, 100, 'ball');
+        this.ball.setVelocity(100, 200);
+        this.ball.setBounce(1);
+        this.ball.setCollideWorldBounds(true);
+        this.ball.onWorldBounds = true;
+
+        this.physics.add.collider(this.ball, this.blockGroup, this.hitBallAndBlock);
+        //this.physics.add.collider(this.ball, this.blockGroup, this.hitBallAndBlock, null, this);
+        //this.physics.add.collider(this.ball, this.blockGroup);
 
         //emitter.startFollow(ball);
     }
+
+    function hitBallAndBlock(ball, block) {
+        // TODO
+        console.log('Hit!');
+    };
 </script>
 </body>
 </html>
