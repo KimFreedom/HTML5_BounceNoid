@@ -59,22 +59,26 @@
         this.add.image(width / 2, height / 2, 'sky');
 
         // Add buttons
-        this.move1PLeft = this.add.image(25, height - 25, 'moveLeft')
+        this.move1PLeft = this.add.image(50, height - 25, 'moveLeft')
+                .setScale(2, 1)
                 .setInteractive()
                 .on('pointerdown', () => move1P(true))
                 .on('pointerup', () => stop1P());
 
-        this.move2PLeft = this.add.image(25, 25, 'moveLeft')
+        this.move2PLeft = this.add.image(50, 25, 'moveLeft')
+                .setScale(2, 1)
                 .setInteractive()
                 .on('pointerdown', () => move2P(true))
                 .on('pointerup', () => stop2P());
 
-        this.move1PRight = this.add.image(width - 25, height - 25, 'moveRight')
+        this.move1PRight = this.add.image(width - 50, height - 25, 'moveRight')
+                .setScale(2, 1)
                 .setInteractive()
                 .on('pointerdown', () => move1P(false))
                 .on('pointerup', () => stop1P());
         
-        this.move2PRight = this.add.image(width - 25, 25, 'moveRight')
+        this.move2PRight = this.add.image(width - 50, 25, 'moveRight')
+                .setScale(2, 1)
                 .setInteractive()
                 .on('pointerdown', () => move2P(false))
                 .on('pointerup', () => stop2P());
