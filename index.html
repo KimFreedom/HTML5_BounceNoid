@@ -6,7 +6,7 @@
 	<style>
 		* { padding: 0; margin: 0; }
 	</style>
-	<script src="//cdn.jsdelivr.net/npm/phaser@3.0.0/dist/phaser.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.19.0/dist/phaser.min.js"></script>
 </head>
 <body>
 <script>
@@ -15,23 +15,26 @@
 		width: 1000,
 		height: 1000,
 		physics: {
-			default: 'arcade'
+			default: 'arcade',
+            arcade: {
+                //debug: true
+            }
 		},
 		scene: {
 			preload: preload,
-			create: create
+            create: create,
+            update: update
 		},
         scale: {
             mode: Phaser.FIT
         }
 	};
-	var game = new Phaser.Game(gameConfig);
+	this.game = new Phaser.Game(gameConfig);
+    //var text;
 	
 	function preload ()
     {
-        //this.load.setBaseURL('http://labs.phaser.io');
         this.load.image('sky', 'assets/skies/NightSky.png');
-        //this.load.image('logo', 'assets/sprites/GreenBall.png');
         this.load.spritesheet('blocks', 'assets/sprites/blocks.png', { frameWidth: 32, frameHeight: 32 });
         this.load.image('ball', 'assets/sprites/ball.png');
         this.load.image('red', 'assets/particles/redParticle.png');
@@ -42,74 +45,153 @@
     {
         let { width, height } = this.canvas;
         
-        /*
-        let borderConfig = {
-            x: 0,
-            y: 50,
-            width: width,
-            height: height - 100,
-            checkLeft: true,
-            checkright: true,
-            checktop: true,
-            checkbottom: true
-        };
-        */
-        //this.physics.world.setBounds(borderConfig);
-        //this.Phaser.Physics.Arcade.World.setBounds(borderConfig);
-        //this.Phaser.Physics.Matter.World.setBounds(borderConfig);
         this.physics.world.bounds.y = 50;
         this.physics.world.bounds.height = height - 100;
         
 
         this.add.image(width / 2, height / 2, 'sky');
-        /*
-        blocks = this.physics.add.group({
-            key: 'block',
-            repeat: 4,
-            setXY: { x: width / 6, y: height / 5, stepX: width / 6 }
-        });
-        */
-        this.blockGroup = this.add.group({
+        
+        this.blockGroup = this.physics.add.group({
             key: 'blocks',
             frame: [0, 1, 2, 3, 4],
-            frameQuantity: 60
+            frameQuantity: 60,
+            immovable: true,
+            gridAlign: {
+                width: 20,
+                height: 15,
+                cellWidth: 32,
+                cellHeight: 32,
+                x: 180,
+                y: 240
+            }
         });
-
-        Phaser.Actions.GridAlign(this.blockGroup.getChildren(), {
-            width: 20,
-            height: 15,
-            cellWidth: 32,
-            cellHeight: 32,
-            x: 180,
-            y: 240
-        });
-        
-        /*
-        var particles = this.add.particles('red');
-        var emitter = particles.createEmitter({
-            speed: 100,
-            scale: { start: 1, end: 0 },
-            blendMode: 'ADD'
-        });
-        */
+        let blocks = this.blockGroup.getChildren();
+        for(let block in blocks) {
+            blocks[block].setCircle(16);
+        }
 
         this.ball = this.physics.add.image(400, 100, 'ball');
+        this.ball.setCircle(8);
         this.ball.setVelocity(100, 200);
         this.ball.setBounce(1);
         this.ball.setCollideWorldBounds(true);
         this.ball.onWorldBounds = true;
 
-        this.physics.add.collider(this.ball, this.blockGroup, this.hitBallAndBlock);
-        //this.physics.add.collider(this.ball, this.blockGroup, this.hitBallAndBlock, null, this);
-        //this.physics.add.collider(this.ball, this.blockGroup);
+        this.physics.add.overlap(this.ball, this.blockGroup, hitBallAndBlock);
+        //text = this.add.text(10, 10, '???', {font: '16px Courier', fill: '#00ff00'});
 
         //emitter.startFollow(ball);
     }
 
     function hitBallAndBlock(ball, block) {
-        // TODO
-        console.log('Hit!');
+        let vectorHitNormal = getNormalizedVector({
+            x: ball.body.center.x - block.body.center.x,
+            y: ball.body.center.y - block.body.center.y
+        });
+        let vectorBallNormal = getNormalizedVector({
+            x: ball.body.velocity.x,
+            y: ball.body.velocity.y
+        });
+
+        let radian = getDotProduct(vectorHitNormal.x, vectorHitNormal.y, -vectorBallNormal.x, -vectorBallNormal.y);
+        let angle  = getRadianToAngle(Math.acos(radian));
+
+        if(isNegativeAngle(vectorHitNormal.x, vectorHitNormal.y, -vectorBallNormal.x, -vectorBallNormal.y)) {
+            angle *= -1;
+        }
+
+        let matrix = getRotateMatrix(angle);
+        ball.setVelocity(
+            ball.body.speed * (vectorHitNormal.x * matrix.M11 + vectorHitNormal.y * matrix.M21),
+            ball.body.speed * (vectorHitNormal.x * matrix.M12 + vectorHitNormal.y * matrix.M22),
+        );
+
+        block.disableBody(true, true);
     };
+
+    function hitBallAndBlockProcess(ball, block) {
+        let ballVel = ball.body.velocity;
+        console.log('[Process] ball.VelX:' + ballVel.x + ', ball.VelY:' + ballVel.y);
+    }
+
+    function update() {
+        /*
+        text.setText([
+            '<Ball Info>',
+            'angle : ' + this.ball.body.angle,
+            'center.x : ' + this.ball.body.center.x,
+            'center.y : ' + this.ball.body.center.y,
+            '_dx : ' + this.ball.body._dx,
+            '_dy : ' + this.ball.body._dy,
+        ]);
+        */
+    }
+
+    /////////////////////////////////// Math //////////////////////////////////////
+    function getRotateMatrix(degree) {
+        let v = {
+            Dx: 0,
+            Dy: 0,
+            M11: Math.cos((degree / 180.0) * Math.PI),
+            M12: Math.sin((degree / 180.0) * Math.PI),
+            M21: -Math.sin((degree / 180.0) * Math.PI),
+            M22: Math.cos((degree / 180.0) * Math.PI),
+        }
+        return v;
+    }
+
+    function getRadianToAngle(radian) {
+        return radian * 180.0 / Math.PI;
+    }
+
+    function getDotProduct(x1, y1, x2, y2) {
+        return x1 * x2 + y1 * y2;
+    }
+
+    function getNormalizedVector(v) {
+        let length = Math.sqrt(Math.pow(v.x, 2.0) + Math.pow(v.y, 2.0));
+        let v_normal = {
+            x: v.x / length,
+            y: v.y / length
+        };
+        return v_normal;
+    }
+
+    function isNegativeAngle(baseX, baseY, ballX, ballY) {
+        let diagonal = 1.0 / Math.sqrt(2.0);
+
+        // South
+        if(baseY >= diagonal) {
+            if(ballX <= baseX) {
+                return true;
+            }
+            return false;
+        }
+        // West
+        else if(baseX <= -diagonal) {
+            if(ballY <= baseY) {
+                return true;
+            }
+            return false;
+        }
+        // North
+        else if(baseY <= -diagonal) {
+            if(ballX >= baseX) {
+                return true;
+            }
+            return false;
+        }
+        // East
+        else {
+            if(ballY >= baseY) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+
+
 </script>
 </body>
 </html>
