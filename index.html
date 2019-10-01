@@ -30,6 +30,8 @@
         }
 	};
 	this.game = new Phaser.Game(gameConfig);
+    var cursors;
+    var paddle1P, paddle2P;
     //var text;
 	
 	function preload ()
@@ -37,7 +39,11 @@
         this.load.image('sky', 'assets/skies/NightSky.png');
         this.load.spritesheet('blocks', 'assets/sprites/blocks.png', { frameWidth: 32, frameHeight: 32 });
         this.load.image('ball', 'assets/sprites/ball.png');
-        this.load.image('red', 'assets/particles/redParticle.png');
+        this.load.image('moveLeft', 'assets/sprites/LeftArrow.png');
+        this.load.image('moveRight', 'assets/sprites/RightArrow.png');
+        this.load.spritesheet('paddleNormal', 'assets/sprites/PaddleNormal.png', { frameWidth: 80, frameHeight: 32 });
+        //this.load.spritesheet('paddleLong', 'assets/sprites/PaddleLong.png', { frameWidth: 160, frameHeight: 32 });
+        //this.load.image('red', 'assets/particles/redParticle.png');
 
         this.canvas = this.sys.game.canvas;
     }
@@ -47,9 +53,39 @@
         
         this.physics.world.bounds.y = 50;
         this.physics.world.bounds.height = height - 100;
-        
 
+        cursors = this.input.keyboard.createCursorKeys();
+        
         this.add.image(width / 2, height / 2, 'sky');
+
+        // Add buttons
+        this.move1PLeft = this.add.image(25, height - 25, 'moveLeft')
+                .setInteractive()
+                .on('pointerdown', () => move1P(true))
+                .on('pointerup', () => stop1P());
+
+        this.move2PLeft = this.add.image(25, 25, 'moveLeft')
+                .setInteractive()
+                .on('pointerdown', () => move2P(true))
+                .on('pointerup', () => stop2P());
+
+        this.move1PRight = this.add.image(width - 25, height - 25, 'moveRight')
+                .setInteractive()
+                .on('pointerdown', () => move1P(false))
+                .on('pointerup', () => stop1P());
+        
+        this.move2PRight = this.add.image(width - 25, 25, 'moveRight')
+                .setInteractive()
+                .on('pointerdown', () => move2P(false))
+                .on('pointerup', () => stop2P());
+
+        // Add paddle
+        paddle1P = this.physics.add.image(width / 2, height - 50, 'paddleNormal', 0)
+                .setImmovable()
+                .setCollideWorldBounds(true);
+        paddle2P = this.physics.add.image(width / 2, 50, 'paddleNormal', 1)
+                .setImmovable()
+                .setCollideWorldBounds(true);
         
         this.blockGroup = this.physics.add.group({
             key: 'blocks',
@@ -76,8 +112,11 @@
         this.ball.setBounce(1);
         this.ball.setCollideWorldBounds(true);
         this.ball.onWorldBounds = true;
+        this.ball.setAngularVelocity(300);
 
         this.physics.add.overlap(this.ball, this.blockGroup, hitBallAndBlock);
+        this.physics.add.collider(this.ball, paddle1P);
+        this.physics.add.collider(this.ball, paddle2P);
         //text = this.add.text(10, 10, '???', {font: '16px Courier', fill: '#00ff00'});
 
         //emitter.startFollow(ball);
@@ -106,12 +145,46 @@
             ball.body.speed * (vectorHitNormal.x * matrix.M12 + vectorHitNormal.y * matrix.M22),
         );
 
-        block.disableBody(true, true);
-    };
+        //console.log(block);
+        //block.disableBody(true, true);
+        if(block.frame.name == 0) {
+            block.disableBody(true, true);
+        }
+        else {
+            block.setFrame(block.frame.name - 1);
+        }
+        //block.body.gameObject.setFrame(0);
+    }
 
     function hitBallAndBlockProcess(ball, block) {
         let ballVel = ball.body.velocity;
         console.log('[Process] ball.VelX:' + ballVel.x + ', ball.VelY:' + ballVel.y);
+    }
+
+    function move1P(isMoveLeft) {
+        if(isMoveLeft) {
+            paddle1P.setVelocity(-300, 0);
+        }
+        else {
+            paddle1P.setVelocity(300, 0);
+        }
+    }
+
+    function move2P(isMoveLeft) {
+        if(isMoveLeft) {
+            paddle2P.setVelocity(-300, 0);
+        }
+        else {
+            paddle2P.setVelocity(300, 0);
+        }
+    }
+
+    function stop1P() {
+        paddle1P.setVelocity(0);
+    }
+
+    function stop2P() {
+        paddle2P.setVelocity(0);
     }
 
     function update() {
